@@ -20,8 +20,10 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-  res.send("Ok");
+  const randomString = generateRandomString();
+  urlDatabase[randomString] = req.body.longURL;
+  console.log(urlDatabase);
+  res.redirect('/urls/' + randomString);
 });
 
 app.get("/urls.json", (req, res) => {
@@ -37,6 +39,11 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
+});
+
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello World</body></html>\n");
 });
@@ -46,5 +53,11 @@ app.listen(PORT, () => {
 });
 
 function generateRandomString() {
-
+  const length = 6;
+  let text = "";
+  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (var i = 0; i < length; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
 }
