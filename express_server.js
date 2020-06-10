@@ -3,25 +3,29 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser')
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com"
+// };
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
-const users = { 
+const users = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "purple-monkey-dinosaur"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 }
 
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
@@ -30,17 +34,29 @@ app.get("/", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let user = users[req.cookies["user_id"]];
-  let templateVars = {
-    urls: urlDatabase,
-    user: user
-  };
-  res.render("urls_index", templateVars);
+  if (!user) {
+    res.redirect('/login');
+  } else {
+    let templateVars = {
+      urls: urlDatabase,
+      user: user
+    };
+    res.render("urls_index", templateVars);
+  }
 });
 
 app.post("/urls", (req, res) => {
-  const urlId = generateRandomString();
-  urlDatabase[urlId] = req.body.longURL;
-  res.redirect('/urls/' + urlId);
+  let user = users[req.cookies["user_id"]];
+  if (!user) {
+    res.redirect('/login');
+  } else {
+    const urlId = generateRandomString();
+    urlDatabase[urlId] = {
+      longURL: req.body.longURL,
+      userID: req.cookies["user_id"]
+    };
+    res.redirect('/urls/' + urlId);
+  }
 });
 
 app.get("/urls.json", (req, res) => {
@@ -49,35 +65,53 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   let user = users[req.cookies["user_id"]];
-  let templateVars = {
-    user: user
-  };
-  res.render("urls_new", templateVars);
+  if (!user) {
+    res.redirect('/login');
+  } else {
+    let templateVars = {
+      user: user
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   let user = users[req.cookies["user_id"]];
-  let templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    user, user
-  };
-  res.render("urls_show", templateVars);
+  if (!user) {
+    res.redirect('/login');
+  } else {
+    let templateVars = {
+      shortURL: req.params.shortURL,
+      longURL: urlDatabase[req.params.shortURL]['longURL'],
+      user, user
+    };
+    res.render("urls_show", templateVars);
+  }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  let user = users[req.cookies["user_id"]];
+  if (!user) {
+    res.redirect('/login');
+  } else {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls');
+  }
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.updatedLongURL;
+  urlDatabase[req.params.shortURL]['longURL'] = req.body.updatedLongURL;
   res.redirect('/urls');
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+  const shortURL = urlDatabase[req.params.shortURL];
+  if (!shortURL) {
+    res.status(404).send('The specified short URL cannot be found');
+  } else {
+    const longURL = urlDatabase[req.params.shortURL]['longURL'];
+    res.redirect(longURL);
+  }
 });
 
 app.get("/login", (req, res) => {
@@ -140,7 +174,7 @@ function generateRandomString() {
   let text = "";
   let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   for (var i = 0; i < length; i++) {
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
 }
