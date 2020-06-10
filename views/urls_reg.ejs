@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -7,36 +8,32 @@
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
     integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-  <link href='#'>
-  <title>TinyApp</title>
+  <title>Registration - TinyApp</title>
 </head>
 
 <body>
-  <%- include('partials/_header') %>
   <main style="margin: 1em;">
-    <h3>My URLs</h3>
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Short URL</th>
-          <th scope="col">Long URL</th>
-          <th scope="col">Edit</th>
-          <th scope="col">Delete</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% for(let url in urls) { %>
-        <tr>
-          <form method="POST" action="/urls/<%= url %>/delete">
-            <td><%= url %></td>
-            <td><%= urls[url] %></td>
-            <td><a class="btn btn-primary" style="margin: 1px; padding: 3px 8px" href='/urls/<%= url %>'>Edit</a>
-            <td><button type="submit" class="btn btn-danger" style="margin: 1px; padding: 3px 8px">Delete</button></td>
-          </form>
-        </tr>
-        <% } %>
-      </tbody>
-    </table>
+    <h3>Registration</h3>
+    <form method="POST" action="/register">
+      <div style="width: 20em;">
+        <div class="form-group">
+          <label for="name">Name:</label>
+          <input class="form-control" style="width: 100%" type="text" name="name" id="name"
+            placeholder="Please enter your name">
+        </div>
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input class="form-control" style="width: 100%" type="text" name="email" id="email"
+            placeholder="Please enter your email">
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input class="form-control" style="width: 100%" type="password" name="password" id="password"
+            placeholder="Please enter your password">
+        </div>
+        <input type="submit" class="btn btn-primary" value="Register" />
+      </div>
+    </form>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
