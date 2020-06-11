@@ -5,17 +5,17 @@ const getUserByEmail = function(searchEmail, database) {
     }
   }
   return false;
-}
+};
 
 const generateRandomString = function() {
   const length = 6;
   const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let text = "";
-  for (var i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
-}
+};
 
 const urlsForUser = function(id, urlDatabase) {
   let filteredUrlDatabase = {};
@@ -25,6 +25,6 @@ const urlsForUser = function(id, urlDatabase) {
     }
   }
   return filteredUrlDatabase;
-}
+};
 
 module.exports = { getUserByEmail, generateRandomString, urlsForUser };

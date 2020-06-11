@@ -5,26 +5,26 @@ const { getUserByEmail, generateRandomString, urlsForUser } = require('../helper
 
 const testUsers = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "purple-monkey-dinosaur"
   },
   "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 };
 
 describe('getUserByEmail', function() {
   it('should return a user when passed a valid email', function() {
-    const user = getUserByEmail("user@example.com", testUsers)
+    const user = getUserByEmail("user@example.com", testUsers);
     const expectedOutput = testUsers["userRandomID"];
     assert.deepEqual(user, expectedOutput);
   });
 
   it('should return false when passed an invalid email', function() {
-    const user = getUserByEmail("user@somebadexample.com", testUsers)
+    const user = getUserByEmail("user@somebadexample.com", testUsers);
     assert.isFalse(user);
   });
 });
@@ -42,7 +42,7 @@ describe('generateRandomString', function() {
         }
       }
       return true;
-    }
+    };
     assert.isTrue(areAllCharsPresent());
   });
 });
@@ -57,17 +57,16 @@ const testUrlDatabase = {
 describe('urlsForUser', function() {
   it('should return a subset of the url database when passed a valid user ID', function() {
     const urlId = "b6UTxQ";
-    const userId = "aJ48lW"
+    const userId = "aJ48lW";
     let expectedOutput = {};
-    const filteredDatabase = urlsForUser(userId, testUrlDatabase)
+    const filteredDatabase = urlsForUser(userId, testUrlDatabase);
     expectedOutput[urlId] = testUrlDatabase[urlId];
     assert.deepEqual(filteredDatabase, expectedOutput);
   });
 
-  it('should return an empty object when passed an invalid url ID', function() {
-    const urlId = "b6UTxQ";
-    const userId = "gJ4s9Q"
-    const filteredDatabase = urlsForUser(userId, testUrlDatabase)
+  it('should return an empty object when passed an invalid user ID', function() {
+    const userId = "gJ4s9Q";
+    const filteredDatabase = urlsForUser(userId, testUrlDatabase);
     let expectedOutput = {};
     assert.deepEqual(filteredDatabase, expectedOutput);
   });

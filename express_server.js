@@ -21,7 +21,7 @@ const users = {
     email: "user2@example.com",
     password: "dishwasher-funk"
   }
-}
+};
 
 app.set("view engine", "ejs");
 
@@ -35,6 +35,15 @@ app.use(
     ],
   }),
 );
+
+app.get("/", (req, res) => {
+  let user = users[req.session.user_id];
+  if (!user) {
+    res.redirect('/login');
+  } else {
+    res.redirect('/urls');
+  }
+});
 
 app.get("/urls", (req, res) => {
   let user = users[req.session.user_id];
@@ -80,15 +89,19 @@ app.get("/urls/:shortURL", (req, res) => {
   if (!user) {
     res.status(403).send('You must be registered and logged in to view this page');
   } else {
-    if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
-      res.status(403).send('This URL was not created under this account');
+    if (urlDatabase[req.params.shortURL] === undefined) {
+      res.status(404).send('The requested URL id was not found');
     } else {
-      let templateVars = {
-        shortURL: req.params.shortURL,
-        longURL: urlDatabase[req.params.shortURL]['longURL'],
-        user, user
-      };
-      res.render("urls_show", templateVars);
+      if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
+        res.status(403).send('This URL was not created under this account');
+      } else {
+        let templateVars = {
+          shortURL: req.params.shortURL,
+          longURL: urlDatabase[req.params.shortURL]['longURL'],
+          user: user
+        };
+        res.render("urls_show", templateVars);
+      }
     }
   }
 });
@@ -98,18 +111,35 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   if (!user) {
     res.status(403).send('You must be registered and logged in to delete a URL');
   } else {
-    if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
-      res.status(403).send('This URL was not created under this account');
+    if (urlDatabase[req.params.shortURL] === undefined) {
+      res.status(404).send('The URL id you are attemping to delete was not found');
     } else {
-      delete urlDatabase[req.params.shortURL];
-      res.redirect('/urls');
+      if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
+        res.status(403).send('This URL was not created under this account');
+      } else {
+        delete urlDatabase[req.params.shortURL];
+        res.redirect('/urls');
+      }
     }
   }
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL]['longURL'] = req.body.updatedLongURL;
-  res.redirect('/urls');
+  let user = users[req.session.user_id];
+  if (!user) {
+    res.status(403).send('You must be registered and logged in to view this page');
+  } else {
+    if (urlDatabase[req.params.shortURL] === undefined) {
+      res.status(404).send('The requested URL id was not found');
+    } else {
+      if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
+        res.status(403).send('This URL was not created under this account');
+      } else {
+        urlDatabase[req.params.shortURL]['longURL'] = req.body.updatedLongURL;
+        res.redirect('/urls');
+      }
+    }
+  }
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -123,10 +153,15 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  let templateVars = {
-    user: null
-  };
-  res.render("urls_login", templateVars);
+  let user = users[req.session.user_id];
+  if (!user) {
+    let templateVars = {
+      user: null
+    };
+    res.render("urls_login", templateVars);
+  } else {
+    res.redirect('/urls');
+  }
 });
 
 app.post("/login", (req, res) => {
@@ -145,10 +180,14 @@ app.post("/login", (req, res) => {
 
 app.get("/register", (req, res) => {
   let user = users[req.session.user_id];
-  let templateVars = {
-    user: user
-  };
-  res.render("urls_reg", templateVars);
+  if (!user) {
+    let templateVars = {
+      user: user
+    };
+    res.render("urls_reg", templateVars);
+  } else {
+    res.redirect('/urls');
+  }
 });
 
 app.post("/register", (req, res) => {
@@ -162,7 +201,7 @@ app.post("/register", (req, res) => {
       id: userId,
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, saltRounds)
-    }
+    };
     req.session.user_id = userId;
     res.redirect('/urls');
   }
