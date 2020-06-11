@@ -1,12 +1,10 @@
 const express = require("express");
-const app = express();
-const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+const app = express();
+const PORT = 8080;
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
@@ -134,7 +132,7 @@ app.post("/login", (req, res) => {
   if (!user) {
     res.status(403).send('An account with that email cannot be found');
   } else {
-    if (user.password !== req.body.password) {
+    if (!bcrypt.compareSync(req.body.password, user.password)) {
       res.status(403).send('Incorrect password');
     } else {
       res.cookie('user_id', user.id);
@@ -161,8 +159,9 @@ app.post("/register", (req, res) => {
     users[userId] = {
       id: userId,
       email: req.body.email,
-      password: req.body.password
+      password: bcrypt.hashSync(req.body.password, saltRounds)
     }
+    console.log(users);
     res.cookie('user_id', userId);
     res.redirect('/urls');
   }
