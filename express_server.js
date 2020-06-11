@@ -35,10 +35,10 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   let user = users[req.cookies["user_id"]];
   if (!user) {
-    res.redirect('/login');
+    res.status(403).send('You must be registered and logged in to view this page');
   } else {
     let templateVars = {
-      urls: urlDatabase,
+      urls: urlsForUser(user.id),
       user: user
     };
     res.render("urls_index", templateVars);
@@ -48,7 +48,7 @@ app.get("/urls", (req, res) => {
 app.post("/urls", (req, res) => {
   let user = users[req.cookies["user_id"]];
   if (!user) {
-    res.redirect('/login');
+    res.status(403).send('You must be registered and logged in to view this page');
   } else {
     const urlId = generateRandomString();
     urlDatabase[urlId] = {
@@ -78,24 +78,32 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   let user = users[req.cookies["user_id"]];
   if (!user) {
-    res.redirect('/login');
+    res.status(403).send('You must be registered and logged in to view this page');
   } else {
-    let templateVars = {
-      shortURL: req.params.shortURL,
-      longURL: urlDatabase[req.params.shortURL]['longURL'],
-      user, user
-    };
-    res.render("urls_show", templateVars);
+    if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
+      res.status(403).send('This URL was not created under this account');
+    } else {
+      let templateVars = {
+        shortURL: req.params.shortURL,
+        longURL: urlDatabase[req.params.shortURL]['longURL'],
+        user, user
+      };
+      res.render("urls_show", templateVars);
+    }
   }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
   let user = users[req.cookies["user_id"]];
   if (!user) {
-    res.redirect('/login');
+    res.status(403).send('You must be registered and logged in to delete a URL');
   } else {
-    delete urlDatabase[req.params.shortURL];
-    res.redirect('/urls');
+    if (urlDatabase[req.params.shortURL]['userID'] !== user.id) {
+      res.status(403).send('This URL was not created under this account');
+    } else {
+      delete urlDatabase[req.params.shortURL];
+      res.redirect('/urls');
+    }
   }
 });
 
@@ -162,7 +170,7 @@ app.post("/register", (req, res) => {
 
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
 app.listen(PORT, () => {
@@ -186,4 +194,14 @@ function emailInDatabase(searchEmail) {
     }
   }
   return false;
+}
+
+function urlsForUser(id) {
+  let filteredUrlDatabase = {};
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL]['userID'] === id) {
+      filteredUrlDatabase[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return filteredUrlDatabase;
 }
