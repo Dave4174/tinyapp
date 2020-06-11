@@ -1,7 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers');
 const saltRounds = 10;
 const app = express();
 const PORT = 8080;
@@ -23,20 +24,25 @@ const users = {
 }
 
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+  cookieSession({
+    name: 'session',
+    keys: [
+      '8f232fc4-47de-41a1-a8cd-4f9323253715',
+      '1279e050-24c2-4cc6-a176-3d03d66948a2',
+    ],
+  }),
+);
 
 app.get("/urls", (req, res) => {
-  let user = users[req.cookies["user_id"]];
+  let user = users[req.session.user_id];
   if (!user) {
     res.status(403).send('You must be registered and logged in to view this page');
   } else {
     let templateVars = {
-      urls: urlsForUser(user.id),
+      urls: urlsForUser(user.id, urlDatabase),
       user: user
     };
     res.render("urls_index", templateVars);
@@ -44,25 +50,21 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  let user = users[req.cookies["user_id"]];
+  let user = users[req.session.user_id];
   if (!user) {
     res.status(403).send('You must be registered and logged in to view this page');
   } else {
     const urlId = generateRandomString();
     urlDatabase[urlId] = {
       longURL: req.body.longURL,
-      userID: req.cookies["user_id"]
+      userID: req.session.user_id
     };
     res.redirect('/urls/' + urlId);
   }
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
 app.get("/urls/new", (req, res) => {
-  let user = users[req.cookies["user_id"]];
+  let user = users[req.session.user_id];
   if (!user) {
     res.redirect('/login');
   } else {
@@ -74,7 +76,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let user = users[req.cookies["user_id"]];
+  let user = users[req.session.user_id];
   if (!user) {
     res.status(403).send('You must be registered and logged in to view this page');
   } else {
@@ -92,7 +94,7 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let user = users[req.cookies["user_id"]];
+  let user = users[req.session.user_id];
   if (!user) {
     res.status(403).send('You must be registered and logged in to delete a URL');
   } else {
@@ -128,21 +130,21 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  let user = emailInDatabase(req.body.email);
+  let user = getUserByEmail(req.body.email, users);
   if (!user) {
     res.status(403).send('An account with that email cannot be found');
   } else {
     if (!bcrypt.compareSync(req.body.password, user.password)) {
       res.status(403).send('Incorrect password');
     } else {
-      res.cookie('user_id', user.id);
+      req.session.user_id = user.id;
       res.redirect('/urls');
     }
   }
 });
 
 app.get("/register", (req, res) => {
-  let user = users[req.cookies["user_id"]];
+  let user = users[req.session.user_id];
   let templateVars = {
     user: user
   };
@@ -152,7 +154,7 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   if (!req.body.email || !req.body.password) {
     res.status(400).send('Email and/or password not supplied');
-  } else if (emailInDatabase(req.body.email)) {
+  } else if (getUserByEmail(req.body.email, users)) {
     res.status(400).send('Email already exists in database');
   } else {
     const userId = generateRandomString();
@@ -161,46 +163,16 @@ app.post("/register", (req, res) => {
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, saltRounds)
     }
-    console.log(users);
-    res.cookie('user_id', userId);
+    req.session.user_id = userId;
     res.redirect('/urls');
   }
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  req.session.user_id = null;
   res.redirect('/login');
 });
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-function generateRandomString() {
-  const length = 6;
-  let text = "";
-  let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (var i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-}
-
-function emailInDatabase(searchEmail) {
-  for (let userId in users) {
-    if (users[userId].email === searchEmail) {
-      return users[userId];
-    }
-  }
-  return false;
-}
-
-function urlsForUser(id) {
-  let filteredUrlDatabase = {};
-  for (let shortURL in urlDatabase) {
-    if (urlDatabase[shortURL]['userID'] === id) {
-      filteredUrlDatabase[shortURL] = urlDatabase[shortURL];
-    }
-  }
-  return filteredUrlDatabase;
-}
